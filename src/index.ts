@@ -1,5 +1,5 @@
 import { DriverModule } from "@drawdy/driver-protocol";
-import { WEBVIEW_HTML } from "virtual:webview-html";
+import { WEBVIEW_HTML } from "./webview-html";
 
 import { enqueue } from "./drawdy-bridge/queue";
 import {

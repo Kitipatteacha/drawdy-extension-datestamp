@@ -1,30 +1,30 @@
-// Builds the panel first, then embeds it in the driver as `WEBVIEW_HTML`,
-// the way the presentation example does.
+// Builds the panel first and writes it into src/webview-html.ts as
+// `WEBVIEW_HTML`, then builds the driver, which imports it. Drawdy's build
+// service builds src/ without bundler plugins, so the generated file is
+// committed alongside the code it comes from.
 
 import terser from "@rollup/plugin-terser";
 import typescript from "@rollup/plugin-typescript";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = dirname(fileURLToPath(import.meta.url));
 
-const WEBVIEW_HTML_MODULE = "virtual:webview-html";
+const CSS_PATH = join(root, "webview", "styles.css");
+const JS_PATH = join(root, "dist", "webview.js");
+const HTML_MODULE_PATH = join(root, "src", "webview-html.ts");
 
+/** Writes the built panel, with its styles, into src/webview-html.ts. */
 function webviewHtml() {
     return {
         name: "webview-html",
-        resolveId(id) {
-            return id === WEBVIEW_HTML_MODULE ? `\0${id}` : null;
+        buildStart() {
+            this.addWatchFile(CSS_PATH);
         },
-        load(id) {
-            if (id !== `\0${WEBVIEW_HTML_MODULE}`) return null;
-            const cssPath = join(root, "webview", "styles.css");
-            const jsPath = join(root, "dist", "webview.js");
-            this.addWatchFile(cssPath);
-            this.addWatchFile(jsPath);
-            const css = readFileSync(cssPath, "utf8");
-            const js = readFileSync(jsPath, "utf8").replaceAll(
+        writeBundle() {
+            const css = readFileSync(CSS_PATH, "utf8");
+            const js = readFileSync(JS_PATH, "utf8").replaceAll(
                 "</script",
                 "<\\/script"
             );
@@ -34,7 +34,19 @@ function webviewHtml() {
                 `<style id="styling">:root{/*__DRAWDY_STYLING__*/}</style>` +
                 `<style>${css}</style></head><body><div id="app"></div>` +
                 `<script>${js}</script></body></html>`;
-            return `export const WEBVIEW_HTML = ${JSON.stringify(html)};`;
+            const source =
+                `// Generated from webview/ by \`pnpm build\`: the panel as one html string.\n` +
+                `// Committed because Drawdy's build service can't run bundler plugins.\n` +
+                `// Don't edit it by hand.\n\n` +
+                `export const WEBVIEW_HTML = ${JSON.stringify(html)};\n`;
+            // Only a change is written, so the dev server's rebuild on save
+            // doesn't set off another one.
+            if (
+                !existsSync(HTML_MODULE_PATH) ||
+                readFileSync(HTML_MODULE_PATH, "utf8") !== source
+            ) {
+                writeFileSync(HTML_MODULE_PATH, source);
+            }
         },
     };
 }
@@ -43,12 +55,13 @@ function webviewHtml() {
 const webview = {
     input: join(root, "webview", "index.ts"),
     output: {
-        file: join(root, "dist", "webview.js"),
+        file: JS_PATH,
         format: "iife",
     },
     plugins: [
         typescript({ tsconfig: join(root, "tsconfig.json") }),
         terser(),
+        webviewHtml(),
     ],
 };
 
@@ -59,10 +72,7 @@ const driver = {
         format: "cjs",
         exports: "named",
     },
-    plugins: [
-        webviewHtml(),
-        typescript({ tsconfig: join(root, "tsconfig.json") }),
-    ],
+    plugins: [typescript({ tsconfig: join(root, "tsconfig.json") })],
 };
 
 export default [webview, driver];
