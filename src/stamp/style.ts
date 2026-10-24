@@ -11,7 +11,7 @@ export type Status = {
 export const STATUSES = [
   {
     key: "updated",
-    label: "Date",
+    label: "Updated",
     icon: '<rect x="3" y="4.5" width="18" height="16.5" rx="3"/><path d="M8 2.5v4M16 2.5v4M3 10h18"/>',
   },
   {
@@ -36,8 +36,8 @@ export const STATUSES = [
   },
   {
     key: "rejected",
-    label: "Flagged",
-    icon: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>',
+    label: "Rejected",
+    icon: '<circle cx="12" cy="12" r="9.5"/><path d="m15 9-6 6M9 9l6 6"/>',
   },
 ] as const satisfies readonly Status[];
 
@@ -46,98 +46,112 @@ export type StatusKey = (typeof STATUSES)[number]["key"];
 export type Color = {
   key: string;
   label: string;
-  /** The badge, with the first words of the date in white on it. */
+  /** The badge. */
   ink: string;
-  /** The icon and the rest of the date, a light tint of the ink. */
-  tint: string;
+  /** The date on the badge: dark on a light ink, white on a deep one. */
+  text: string;
+  /** The icon's disc, and the icon on it. */
+  disc: string;
+  icon: string;
   /** A gradient rim in place of the white one. */
   rim?: readonly string[];
   /** A gradient across the badge, left to right, in place of the ink. */
-  fill?: readonly string[];
-  /** A metallic gradient, top to bottom, for the icon and the rest of the date. */
+  gradient?: readonly string[];
+  /** A metallic gradient for the icon's disc. */
   shine?: readonly string[];
 };
 
-// Fixed colours, like a sticker's: a stamp reads the same on a light or a dark
-// board. White keeps above 5:1 on every ink, and every tint above 3:1, as the
-// stamp's words are large and bold.
+const DARK = "#111113";
+const WHITE = "#ffffff";
+
+// Drawdy's Marker inks (light theme), each with whichever of the canvas
+// foreground or white reads on it, above 4.5:1. Fixed, like a sticker's: a
+// stamp reads the same on a light or a dark board.
 export const COLORS = [
-  { key: "black", label: "Black", ink: "#262626", tint: "#a3a3a3" },
-  { key: "blue", label: "Blue", ink: "#2d5db1", tint: "#bcd0f5" },
-  { key: "green", label: "Green", ink: "#2b6a3c", tint: "#b4e2c0" },
-  { key: "red", label: "Red", ink: "#a2352d", tint: "#f8c9c2" },
-  { key: "purple", label: "Purple", ink: "#6c3bc4", tint: "#dccbfb" },
-  { key: "orange", label: "Orange", ink: "#b8420f", tint: "#fed7aa" },
+  { key: "black", label: "Neutral", ink: "#18181b", text: WHITE, disc: "#c5f601", icon: DARK },
+  { key: "lime", label: "Lime", ink: "#c5f601", text: DARK, disc: DARK, icon: "#c5f601" },
+  { key: "orange", label: "Orange", ink: "#ffb85c", text: DARK, disc: WHITE, icon: DARK },
+  { key: "blue", label: "Blue", ink: "#698cf9", text: DARK, disc: WHITE, icon: DARK },
+  { key: "teal", label: "Teal", ink: "#00d2be", text: DARK, disc: WHITE, icon: DARK },
+  { key: "purple", label: "Purple", ink: "#a389ff", text: DARK, disc: WHITE, icon: DARK },
+  { key: "pink", label: "Pink", ink: "#ff89a8", text: DARK, disc: WHITE, icon: DARK },
+  { key: "red", label: "Red", ink: "#e0301e", text: WHITE, disc: WHITE, icon: "#e0301e" },
   {
     key: "gold",
     label: "Gold",
-    ink: "#1c1c1c",
-    tint: "#e7c27a",
+    ink: "#18181b",
+    text: WHITE,
+    disc: "#e9c46f",
+    icon: "#18181b",
     rim: ["#f6e2a8", "#b8862f", "#fbeec6", "#9c6b1f", "#f3d68f"],
     shine: ["#fff1c1", "#f0cf7f", "#c9963a", "#e9c46f"],
   },
-  // Deep enough at every stop for white words, so it skips a bright yellow.
+  // The Marker inks in turn, all light enough for the dark date.
   {
     key: "rainbow",
     label: "Rainbow",
-    ink: "#2e7d32",
-    tint: "#fff1c2",
-    fill: ["#c62828", "#c2410c", "#a16207", "#2e7d32", "#1565c0", "#6a1b9a"],
+    ink: "#a389ff",
+    text: DARK,
+    disc: WHITE,
+    icon: DARK,
+    gradient: ["#ff89a8", "#ffb85c", "#c5f601", "#00d2be", "#698cf9", "#a389ff"],
   },
 ] as const satisfies readonly Color[];
 
 export type ColorKey = (typeof COLORS)[number]["key"];
 
 export const LANGUAGES = [
-  { key: "en", label: "English" },
-  { key: "th", label: "ไทย" },
-  { key: "ja", label: "日本語" },
-  { key: "zh", label: "中文" },
-  { key: "ko", label: "한국어" },
-  { key: "es", label: "Español" },
-  { key: "fr", label: "Français" },
-  { key: "de", label: "Deutsch" },
+  { key: "en", code: "EN", label: "English" },
+  { key: "th", code: "TH", label: "ไทย" },
+  { key: "ja", code: "JA", label: "日本語" },
+  { key: "zh", code: "ZH", label: "中文" },
+  { key: "ko", code: "KO", label: "한국어" },
+  { key: "es", code: "ES", label: "Español" },
+  { key: "fr", code: "FR", label: "Français" },
+  { key: "de", code: "DE", label: "Deutsch" },
 ] as const;
 
 export type LanguageKey = (typeof LANGUAGES)[number]["key"];
 
-/** The formats by name, then the ones that write the whole date in numbers or short. */
 export const FORMATS = [
+  "d-mmm-yyyy",
+  "mmm-d-yyyy",
   "weekday-mmm-d",
-  "weekday",
   "long",
+  "dd/mm/yyyy",
+  "mm/dd/yyyy",
+  "yyyy-mm-dd",
+  "weekday",
   "mmmm",
   "mmmm-yyyy",
   "q",
   "quarter",
   "yyyy",
-  "d-mmm-yyyy",
-  "mmm-d-yyyy",
-  "dd/mm/yyyy",
-  "mm/dd/yyyy",
-  "yyyy-mm-dd",
 ] as const;
 
 export type FormatKey = (typeof FORMATS)[number];
 
-/** Where the second group of formats starts. */
-export const FIRST_EXACT_FORMAT: FormatKey = "d-mmm-yyyy";
+/** The formats in the groups the format menu shows them in. */
+export const FORMAT_GROUPS: readonly { label: string; formats: readonly FormatKey[] }[] = [
+  { label: "Dates", formats: ["d-mmm-yyyy", "mmm-d-yyyy", "weekday-mmm-d", "long"] },
+  { label: "Numbers", formats: ["dd/mm/yyyy", "mm/dd/yyyy", "yyyy-mm-dd"] },
+  { label: "Periods", formats: ["weekday", "mmmm", "mmmm-yyyy", "q", "quarter", "yyyy"] },
+];
 
-/** What each format writes, the way FigJam names them: a Day is a weekday, a Date a day of the month. */
 export const FORMAT_LABELS: Record<FormatKey, string> = {
-  "weekday-mmm-d": "Day+Date",
-  weekday: "Day",
-  long: "Day+Month+Year",
+  "d-mmm-yyyy": "Day first",
+  "mmm-d-yyyy": "Month first",
+  "weekday-mmm-d": "With weekday",
+  long: "Written out",
+  "dd/mm/yyyy": "Day first",
+  "mm/dd/yyyy": "Month first",
+  "yyyy-mm-dd": "ISO",
+  weekday: "Weekday",
   mmmm: "Month",
-  "mmmm-yyyy": "Month+Year",
+  "mmmm-yyyy": "Month and year",
   q: "Quarter",
-  quarter: "Quarter+Year",
+  quarter: "Quarter and year",
   yyyy: "Year",
-  "d-mmm-yyyy": "Date+Month+Year",
-  "mmm-d-yyyy": "Month+Date+Year",
-  "dd/mm/yyyy": "DD/MM/YYYY",
-  "mm/dd/yyyy": "MM/DD/YYYY",
-  "yyyy-mm-dd": "YYYY-MM-DD",
 };
 
 /** A stamp's settings. `date` is a calendar day, `yyyy-mm-dd`. */
@@ -146,7 +160,7 @@ export type StampStyle = {
   color: ColorKey;
   date: string;
   format: FormatKey;
-  /** Leans the stamp a little, like a sticker slapped on. */
+  /** Leans the stamp a little, as if stuck on by hand. */
   tilt: boolean;
   lang: LanguageKey;
 };
@@ -156,19 +170,21 @@ export const statusOf = (key: StatusKey): Status =>
 
 export const colorOf = (key: ColorKey): Color => COLORS.find((c) => c.key === key) ?? COLORS[0];
 
-/** A colour as a CSS background for the panel: the badge's gradient, the rim's, or the ink. */
-export function swatchCss(color: Color): string {
-  const stops = color.fill ?? color.rim;
-  return stops ? `linear-gradient(135deg, ${stops.join(", ")})` : color.ink;
-}
+/** The stops a colour's swatch is painted with: the badge's gradient, the rim's, or the ink. */
+export const swatchStops = (color: Color): readonly string[] => color.gradient ?? color.rim ?? [color.ink];
 
-export const languageOf = (key: LanguageKey): (typeof LANGUAGES)[number] =>
-  LANGUAGES.find((l) => l.key === key) ?? LANGUAGES[0];
+/** A colour as a CSS background for the panel: Rainbow's gradient, or the ink. */
+export function swatchCss(color: Color): string {
+  return color.gradient ? `linear-gradient(135deg, ${color.gradient.join(", ")})` : color.ink;
+}
 
 /** A status's icon as an svg document, stroked in `color`. */
 export const iconSvg = (key: StatusKey, color: string): string =>
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="${color}" ` +
-  `stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">${statusOf(key).icon}</svg>`;
+  `stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${statusOf(key).icon}</svg>`;
+
+export const languageOf = (key: LanguageKey): (typeof LANGUAGES)[number] =>
+  LANGUAGES.find((l) => l.key === key) ?? LANGUAGES[0];
 
 export const svgDataUri = (svg: string): string =>
   `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
@@ -215,9 +231,9 @@ export function shiftIso(iso: string, days: number): string {
  * the quarter are written the same everywhere.
  */
 const INTL: Partial<Record<FormatKey, Intl.DateTimeFormatOptions>> = {
-  "weekday-mmm-d": { weekday: "long", month: "short", day: "numeric" },
   "d-mmm-yyyy": { day: "numeric", month: "short", year: "numeric" },
   "mmm-d-yyyy": { day: "numeric", month: "short", year: "numeric" },
+  "weekday-mmm-d": { weekday: "short", month: "short", day: "numeric" },
   long: { weekday: "long", day: "numeric", month: "long", year: "numeric" },
   weekday: { weekday: "long" },
   mmmm: { month: "long" },
@@ -236,8 +252,8 @@ function splitParts(parts: Intl.DateTimeFormatPart[]): [string, string] {
 }
 
 /**
- * The date as the stamp writes it, in two phrases: the lead, in white, and
- * the rest, in the colour's tint, as in "Saturday," and " Oct 24".
+ * The date as the stamp writes it, in two phrases: the lead, in full, and
+ * the rest, softer, as in "24 Oct" and " 2026".
  */
 export function datePhrases(iso: string, format: FormatKey, lang: LanguageKey = "en"): [string, string] {
   const date = parseIso(iso) ?? new Date();
@@ -254,12 +270,12 @@ export function datePhrases(iso: string, format: FormatKey, lang: LanguageKey = 
     }
   }
   switch (format) {
-    case "weekday-mmm-d":
-      return [`${DAYS[date.getDay()]},`, ` ${month.slice(0, 3)} ${d}`];
     case "d-mmm-yyyy":
       return [`${d} ${month.slice(0, 3)}`, ` ${y}`];
     case "mmm-d-yyyy":
       return [`${month.slice(0, 3)} ${d},`, ` ${y}`];
+    case "weekday-mmm-d":
+      return [`${DAYS[date.getDay()].slice(0, 3)},`, ` ${d} ${month.slice(0, 3)}`];
     case "long":
       return [`${DAYS[date.getDay()]},`, ` ${d} ${month} ${y}`];
     case "dd/mm/yyyy":
@@ -287,11 +303,11 @@ export const formatDate = (iso: string, format: FormatKey, lang: LanguageKey = "
   datePhrases(iso, format, lang).join("");
 
 export const defaultStyle = (): StampStyle => ({
-  status: "updated",
-  color: "black",
+  status: "approved",
+  color: "lime",
   date: todayIso(),
-  format: "weekday-mmm-d",
-  tilt: true,
+  format: "d-mmm-yyyy",
+  tilt: false,
   lang: "en",
 });
 
@@ -304,7 +320,7 @@ const LEGACY_COLORS: Record<string, ColorKey> = {
   updated: "blue",
   draft: "black",
   review: "orange",
-  approved: "green",
+  approved: "lime",
   rejected: "red",
 };
 

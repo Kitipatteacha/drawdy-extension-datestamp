@@ -1,6 +1,7 @@
-// A little stamp: a tilted purple badge in a white rim, with a calendar and
-// two lines of date on it, like the stamps it makes. Fixed colours, as the
-// action button doesn't follow the theme; the rim's faint edge keeps it whole
-// on a light toolbar, and the badge reads on a dark one.
+// A little stamp in Drawdy's colours: a near-black badge in a white rim, with
+// a tick in a lime disc and a line of date beside it, like the stamps it
+// makes. Fixed colours, as the action button doesn't follow the theme; the
+// rim's faint edge keeps it whole on a light toolbar, and on a dark one the
+// rim itself does.
 export const DATESTAMP_SVG =
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none"><g transform="rotate(-8 12 12)"><rect x="1" y="3.6" width="22" height="16.8" rx="4.6" fill="#fff" stroke="#00000026" stroke-width=".6"/><rect x="2.7" y="5.3" width="18.6" height="13.4" rx="3.2" fill="#6c3bc4"/><g stroke="#dccbfb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="8.6" width="6.4" height="6.6" rx="1.4"/><path d="M7.1 7.6v1.8M9.3 7.6v1.8M5 11.3h6.4"/></g><rect x="13" y="9" width="6" height="2.3" rx="1.15" fill="#fff"/><rect x="13" y="12.7" width="4" height="2.3" rx="1.15" fill="#dccbfb"/></g></svg>';
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none"><rect x=".8" y="4.6" width="22.4" height="14.8" rx="4.4" fill="#fff" stroke="#00000024" stroke-width=".6"/><rect x="2.3" y="6.1" width="19.4" height="11.8" rx="3.4" fill="#18181b"/><circle cx="8.1" cy="12" r="4.1" fill="#c5f601"/><path d="m6.3 12.1 1.3 1.3 2.4-2.6" stroke="#111113" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><rect x="13.6" y="10.6" width="6" height="2.8" rx="1.4" fill="#fff"/></svg>';

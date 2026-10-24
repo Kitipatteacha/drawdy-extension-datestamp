@@ -19,6 +19,7 @@ import {
   closeMenu,
   followCamera,
   hideToolbar,
+  restyleToolbar,
   showToolbar,
   toggleMenu,
   toolbarAction,
@@ -73,9 +74,9 @@ export const onEvent: DriverModule["onEvent"] = async (e) => {
   if (!isOpen()) return;
   switch (e.type) {
     case "subscription:dom:theme-changed": {
-      // The bar is dark on any board, so only the panel follows the theme.
       updateStyling(e.body.styling);
       postStyling();
+      enqueue(restyleToolbar);
       return;
     }
     case "subscription:scene:drawdy-element-selection": {

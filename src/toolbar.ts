@@ -5,24 +5,28 @@ import { Rect } from "./stamp/draw";
 import { idsOf, Stamp } from "./stamp/scene";
 import {
   Color,
+  colorOf,
   COLORS,
-  FIRST_EXACT_FORMAT,
+  formatDate,
+  FORMAT_GROUPS,
   FORMAT_LABELS,
   FORMATS,
   LANGUAGES,
+  languageOf,
   StampStyle,
   STATUSES,
   statusOf,
   svgDataUri,
+  swatchStops,
 } from "./stamp/style";
 
 /**
- * The bar above selected stamps, the way a FigJam widget shows its property
- * menu: the date, then menus for the format, status and colour, the tilt,
- * and a menu for the language. A menu opens under the bar, in the same floating
- * element, and shuts once something in it is picked.
+ * The bar above selected stamps, in the board's theme: menus for the colour,
+ * the status and the format, the date and the tilt, and a menu for the
+ * language. A menu opens under the bar, in the same floating element, and
+ * shuts once something in it is picked.
  */
-export type Menu = "format" | "status" | "color" | "language";
+export type Menu = "color" | "status" | "format" | "language";
 
 export type ToolbarAction =
   | { type: "pick-date" }
@@ -34,40 +38,54 @@ export type ToolbarAction =
 /* Look                                                                 */
 /* ------------------------------------------------------------------ */
 
-// Dark on any board, like FigJam's widget bar, so the stamps' colours read
-// the same next to it.
-const SURFACE = "#1e1e1e";
-const EDGE = "#ffffff1f";
-const TEXT = "#f5f5f5";
-const MUTED = "#a3a3a3";
-const HOVER = "#ffffff14";
-const CHOSEN = "#ffffff24";
+/** The board's theme, as the bar paints it. */
+type Theme = {
+  surface: string;
+  edge: string;
+  text: string;
+  muted: string;
+  hover: string;
+  chosen: string;
+};
 
-const HEIGHT = 44;
-const PAD = 5;
+function theme(): Theme {
+  const { styling } = session();
+  const t = (name: string, fallback: string): string =>
+    (styling.tokens as Record<string, string> | undefined)?.[name] ?? fallback;
+  return {
+    surface: t("--dd-surface-elevated", styling.background),
+    edge: t("--dd-border-subtle", styling.border),
+    text: t("--dd-text-primary", styling.foreground),
+    muted: t("--dd-text-secondary", styling.mutedForeground),
+    hover: t("--dd-interaction-hover", "rgba(127, 127, 127, 0.12)"),
+    chosen: t("--dd-interaction-active", "rgba(127, 127, 127, 0.2)"),
+  };
+}
+
+const HEIGHT = 42;
+const PAD = 4;
 const GAP = 4;
 /** Between the bar and the stamps, the bar and the window's edges, and the bar and its menu. */
 const OFFSET = 12;
 const MARGIN = 8;
 const MENU_GAP = 6;
-const MENU_WIDTH = 220;
+const SWATCH = 16;
 
 /** Each piece of the bar, in order, with its width. */
 const SEGMENTS = [
-  { name: "date", width: 34 },
+  { name: "color", width: 48 },
   { name: "divider", width: 1 },
-  { name: "format", width: 116 },
+  { name: "status", width: 128 },
+  { name: "format", width: 150 },
   { name: "divider", width: 1 },
-  { name: "status", width: 134 },
+  { name: "date", width: 32 },
+  { name: "tilt", width: 32 },
   { name: "divider", width: 1 },
-  { name: "color", width: 50 },
-  { name: "divider", width: 1 },
-  { name: "tilt", width: 34 },
-  { name: "divider", width: 1 },
-  { name: "language", width: 116 },
+  { name: "language", width: 58 },
 ] as const;
 
-const WIDTH = PAD * 2 + 2 + SEGMENTS.reduce((sum, s) => sum + s.width, 0) + GAP * (SEGMENTS.length - 1);
+const WIDTH =
+  PAD * 2 + 2 + SEGMENTS.reduce((sum, s) => sum + s.width, 0) + GAP * (SEGMENTS.length - 1);
 
 /** Where a segment starts, from the bar's left edge. */
 function offsetOf(name: string): number {
@@ -79,23 +97,26 @@ function offsetOf(name: string): number {
   return x;
 }
 
-const glyph = (paths: string, color: string, size = 16, stroke = 2): DomElementSchema => ({
+const glyph = (paths: string, color: string, size = 16): DomElementSchema => ({
   type: "image",
   child: svgDataUri(
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" ` +
-      `stroke="${color}" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`,
+      `stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`,
   ),
   styles: { width: [size, "px"], height: [size, "px"], pointerEvents: "none" },
 });
 
-const CHEVRON = '<path d="m6 9 6 6 6-6"/>';
-const CHECK = '<path d="M20 6 9 17l-5-5"/>';
-const TILT = '<rect x="3.5" y="8" width="17" height="8" rx="2.5" transform="rotate(-14 12 12)"/>';
+const CHEVRON = '<path d="m7 10 5 5 5-5"/>';
+/** An empty dot, for stamps in different colours. */
+const MIXED = '<circle cx="12" cy="12" r="8.5" stroke-dasharray="3 3"/>';
+const CALENDAR = '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>';
+/** A label leaning over a level line. */
+const TILT = '<path d="M4 20h16"/><rect x="5" y="6" width="13" height="8" rx="1.5" transform="rotate(-12 11.5 10)"/>';
 
-const label = (words: string, color = TEXT): DomElementSchema => ({
+const words = (text: string, color: string, size = 12, weight: "medium" | "semibold" = "medium"): DomElementSchema => ({
   type: "text",
-  child: words,
-  styles: { color, fontSize: [13, "px"], fontWeight: "medium", pointerEvents: "none" },
+  child: text,
+  styles: { color, fontSize: [size, "px"], fontWeight: weight, pointerEvents: "none" },
 });
 
 /** A row of content, or with `between`, one that fills its button and pushes its ends apart. */
@@ -111,17 +132,6 @@ const row = (gap: number, children: DomElementSchema[], between = false): DomEle
   children,
 });
 
-const divider: DomElementSchema = {
-  type: "box",
-  styles: { width: [1, "px"], height: [22, "px"], backgroundColor: EDGE },
-};
-
-/** A line between groups in a menu. */
-const menuDivider: DomElementSchema = {
-  type: "box",
-  styles: { width: [100, "%"], height: [1, "px"], backgroundColor: EDGE },
-};
-
 /* ------------------------------------------------------------------ */
 /* Buttons                                                              */
 /* ------------------------------------------------------------------ */
@@ -132,13 +142,13 @@ const buttonId = (name: string): string => `${domId()}:${name}`;
 const BUTTONS: { name: string; action: ToolbarAction }[] = [
   { name: "date", action: { type: "pick-date" } },
   { name: "tilt", action: { type: "tilt" } },
-  ...(["format", "status", "color", "language"] as const).map((menu) => ({
+  ...(["color", "status", "format", "language"] as const).map((menu) => ({
     name: `menu:${menu}`,
     action: { type: "menu", menu } as const,
   })),
-  ...FORMATS.map((f) => ({ name: `format:${f}`, action: { type: "set", change: { format: f } } as const })),
-  ...STATUSES.map((s) => ({ name: `status:${s.key}`, action: { type: "set", change: { status: s.key } } as const })),
   ...COLORS.map((c) => ({ name: `color:${c.key}`, action: { type: "set", change: { color: c.key } } as const })),
+  ...STATUSES.map((s) => ({ name: `status:${s.key}`, action: { type: "set", change: { status: s.key } } as const })),
+  ...FORMATS.map((f) => ({ name: `format:${f}`, action: { type: "set", change: { format: f } } as const })),
   ...LANGUAGES.map((l) => ({ name: `lang:${l.key}`, action: { type: "set", change: { lang: l.key } } as const })),
 ];
 
@@ -168,63 +178,63 @@ function shownOf(stamps: Stamp[]): Shown {
   };
 }
 
-function button(
-  name: string,
-  width: number,
-  children: DomElementSchema[],
-  chosen = false,
-  background = "transparent",
-): DomElementSchema {
+function button(th: Theme, name: string, width: number, children: DomElementSchema[], chosen = false): DomElementSchema {
   return {
     type: "button",
     domId: buttonId(name),
     styles: {
       width: [width, "px"],
-      height: [34, "px"],
-      padding: [8, "px"],
+      height: [32, "px"],
+      padding: [7, "px"],
       borderRadius: [8, "px"],
-      backgroundColor: chosen ? CHOSEN : background,
+      backgroundColor: chosen ? th.chosen : "transparent",
       cursor: "pointer",
-      hover: { backgroundColor: chosen ? CHOSEN : HOVER },
+      hover: { backgroundColor: chosen ? th.chosen : th.hover },
     },
     children,
   };
 }
 
-function dropdown(menu: Menu, width: number, open: boolean, content: DomElementSchema[]): DomElementSchema {
-  return button(`menu:${menu}`, width, [row(8, [row(8, content), glyph(CHEVRON, MUTED, 14)], true)], open);
+function dropdown(th: Theme, menu: Menu, width: number, open: boolean, content: DomElementSchema[]): DomElementSchema {
+  return button(th, `menu:${menu}`, width, [row(6, [row(6, content), glyph(CHEVRON, th.muted, 14)], true)], open);
 }
 
+const divider = (th: Theme): DomElementSchema => ({
+  type: "box",
+  styles: { width: [1, "px"], height: [20, "px"], backgroundColor: th.edge },
+});
+
 /**
- * A colour's dot, drawn as an image: Drawdy sets `backgroundColor` as CSS
- * `background-color`, which can't hold Gold's or Rainbow's gradient.
- * `rimmed` gives it the white rim the stamps have.
+ * A colour's swatch, a rounded square drawn as an image: Drawdy sets
+ * `backgroundColor` as CSS `background-color`, which can't hold Gold's or
+ * Rainbow's gradient. A faint grey edge keeps Black from vanishing on a dark
+ * bar, and pale inks on a light one.
  */
-function swatch(color: Color | undefined, size: number, rimmed = false): DomElementSchema {
-  const stops = color?.fill ?? color?.rim ?? [color?.ink ?? "transparent"];
+function colorSwatch(color: Color, size: number): DomElementSchema {
+  const stops = swatchStops(color);
   const paint =
     stops.length > 1
       ? `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">` +
         stops.map((c, i) => `<stop offset="${i / (stops.length - 1)}" stop-color="${c}"/>`).join("") +
         `</linearGradient></defs>`
       : "";
-  const fill = stops.length > 1 ? "url(#g)" : stops[0];
-  const dot = rimmed
-    ? `<circle cx="12" cy="12" r="10.5" fill="${fill}" stroke="#fff" stroke-width="3"/>`
-    : `<circle cx="12" cy="12" r="12" fill="${fill}"/>`;
   return {
     type: "image",
     child: svgDataUri(
-      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${size}" height="${size}">${paint}${dot}</svg>`,
+      // Drawn at its own pixel size, its 1px edge on the half pixel, so the
+      // edge lands on whole pixels instead of blurring across two.
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">${paint}` +
+        `<rect x="0.5" y="0.5" width="${size - 1}" height="${size - 1}" rx="${Math.round(size / 4)}" ` +
+        `fill="${stops.length > 1 ? "url(#g)" : stops[0]}" stroke="rgba(127, 127, 127, 0.45)" stroke-width="1"/></svg>`,
     ),
     styles: { width: [size, "px"], height: [size, "px"], pointerEvents: "none" },
   };
 }
 
-function bar(shown: Shown, open: Menu | null): DomElementSchema {
+function bar(th: Theme, shown: Shown, open: Menu | null): DomElementSchema {
+  const color = shown.color ? colorSwatch(colorOf(shown.color), SWATCH) : glyph(MIXED, th.muted, SWATCH);
   const status = shown.status ? statusOf(shown.status) : null;
-  const color = COLORS.find((c) => c.key === shown.color);
-  const language = LANGUAGES.find((l) => l.key === shown.lang);
+  const format = shown.format ? FORMAT_LABELS[shown.format] : "Format";
   return {
     type: "row",
     // Drawdy keys its elements by id, so the bar is kept, not rebuilt, as
@@ -236,120 +246,150 @@ function bar(shown: Shown, open: Menu | null): DomElementSchema {
       padding: [PAD, "px"],
       gap: GAP,
       crossAxisAlignment: "center",
-      backgroundColor: SURFACE,
-      borderColor: EDGE,
+      backgroundColor: th.surface,
+      borderColor: th.edge,
       borderType: "solid",
       borderWidth: [1, "px"],
-      borderRadius: [12, "px"],
+      borderRadius: [10, "px"],
       pointerEvents: "auto",
     },
     children: [
-      button("date", 34, [glyph(STATUSES[0].icon, TEXT, 17)]),
-      divider,
-      dropdown("format", 116, open === "format", [label("Format")]),
-      divider,
-      dropdown("status", 134, open === "status", [
-        ...(status ? [glyph(status.icon, TEXT, 15)] : []),
-        label(status ? status.label : "Status"),
+      dropdown(th, "color", 48, open === "color", [color]),
+      divider(th),
+      dropdown(th, "status", 128, open === "status", [
+        ...(status ? [glyph(status.icon, th.text, 15)] : []),
+        words(status ? status.label : "Status", th.text),
       ]),
-      divider,
-      dropdown("color", 50, open === "color", [swatch(color, 16, true)]),
-      divider,
-      button("tilt", 34, [glyph(TILT, shown.tilt ? TEXT : MUTED, 17)], shown.tilt === true),
-      divider,
-      dropdown("language", 116, open === "language", [label(language?.label ?? "Language")]),
+      dropdown(th, "format", 150, open === "format", [words(format, th.text)]),
+      divider(th),
+      button(th, "date", 32, [glyph(CALENDAR, th.text)]),
+      button(th, "tilt", 32, [glyph(TILT, shown.tilt ? th.text : th.muted)], shown.tilt === true),
+      divider(th),
+      dropdown(th, "language", 58, open === "language", [words(languageOf(shown.lang ?? "en").code, th.text)]),
     ],
   };
 }
 
-/** One choice in a menu, with a tick before the chosen one. */
-function option(name: string, chosen: boolean, content: DomElementSchema[]): DomElementSchema {
+/**
+ * One choice in a menu: its name, an icon before it (a glyph's paths, or an
+ * element such as a colour's dot), and on the right a hint such as an example.
+ */
+function option(
+  th: Theme,
+  name: string,
+  chosen: boolean,
+  label: string,
+  hint = "",
+  icon: string | DomElementSchema = "",
+): DomElementSchema {
+  const lead = typeof icon === "string" ? (icon ? [glyph(icon, th.text, 15)] : []) : [icon];
   return {
     type: "button",
     domId: buttonId(name),
     styles: {
       width: [100, "%"],
-      height: [32, "px"],
+      height: [30, "px"],
       padding: [8, "px"],
-      borderRadius: [7, "px"],
-      backgroundColor: chosen ? CHOSEN : "transparent",
+      borderRadius: [6, "px"],
+      backgroundColor: chosen ? th.chosen : "transparent",
       cursor: "pointer",
-      hover: { backgroundColor: chosen ? CHOSEN : HOVER },
+      hover: { backgroundColor: chosen ? th.chosen : th.hover },
     },
-    // The tick's place is kept on every line, so the words line up.
     children: [
-      row(10, [
-        chosen
-          ? glyph(CHECK, TEXT, 14)
-          : { type: "box", styles: { width: [14, "px"], height: [14, "px"], pointerEvents: "none" } },
-        ...content,
-      ]),
+      row(
+        12,
+        [
+          row(8, [...lead, words(label, th.text, 12, chosen ? "semibold" : "medium")]),
+          ...(hint ? [words(hint, th.muted, 11)] : []),
+        ],
+        true,
+      ),
     ],
   };
 }
 
-function menuOf(menu: Menu, shown: Shown): DomElementSchema {
-  const panel = (children: DomElementSchema[], width = MENU_WIDTH): DomElementSchema => ({
+/** A group's name in a menu. */
+const heading = (th: Theme, text: string): DomElementSchema => ({
+  type: "text",
+  child: text.toUpperCase(),
+  styles: { color: th.muted, fontSize: [10, "px"], fontWeight: "semibold", padding: [6, "px"], pointerEvents: "none" },
+});
+
+/** The colour menu's grid: its columns, a swatch's size, and the gap between them. */
+const COLOR_COLUMNS = 5;
+const COLOR_TILE = 26;
+const COLOR_GAP = 6;
+
+function menuOf(th: Theme, menu: Menu, shown: Shown): DomElementSchema {
+  const panel = (children: DomElementSchema[], width: number): DomElementSchema => ({
     type: "column",
     styles: {
       width: [width, "px"],
-      padding: [5, "px"],
-      gap: 2,
-      backgroundColor: SURFACE,
-      borderColor: EDGE,
+      padding: [4, "px"],
+      gap: 1,
+      backgroundColor: th.surface,
+      borderColor: th.edge,
       borderType: "solid",
       borderWidth: [1, "px"],
-      borderRadius: [12, "px"],
+      borderRadius: [10, "px"],
       pointerEvents: "auto",
     },
     children,
   });
   switch (menu) {
-    case "format":
-      return panel(
-        FORMATS.flatMap((f) => [
-          ...(f === FIRST_EXACT_FORMAT ? [menuDivider] : []),
-          option(`format:${f}`, f === shown.format, [label(FORMAT_LABELS[f])]),
-        ]),
-      );
-    case "status":
-      return panel(
-        STATUSES.map((s) =>
-          option(`status:${s.key}`, s.key === shown.status, [glyph(s.icon, TEXT, 15), label(s.label)]),
-        ),
-        180,
-      );
-    case "language":
-      return panel(
-        LANGUAGES.map((l) => option(`lang:${l.key}`, l.key === shown.lang, [label(l.label)])),
-        160,
-      );
     case "color":
-      // A swatch with a gap between it and its ring, which shows the chosen one.
+      // Swatches alone, five to a row, the chosen one ringed in the text colour.
       return panel(
         [
           {
-            type: "row",
-            styles: { gap: 4, crossAxisAlignment: "center" },
+            type: "grid",
+            styles: { columns: COLOR_COLUMNS, gap: COLOR_GAP },
             children: COLORS.map((c) => ({
               type: "button",
               domId: buttonId(`color:${c.key}`),
               styles: {
-                padding: [3, "px"],
-                borderRadius: [50, "%"],
+                padding: [2, "px"],
+                borderRadius: [9, "px"],
                 borderType: "solid",
                 borderWidth: [2, "px"],
-                borderColor: c.key === shown.color ? "#ffffff" : "transparent",
+                borderColor: c.key === shown.color ? th.text : "transparent",
                 backgroundColor: "transparent",
                 cursor: "pointer",
-                hover: { borderColor: c.key === shown.color ? "#ffffff" : MUTED },
+                hover: { borderColor: c.key === shown.color ? th.text : th.edge },
               },
-              children: [swatch(c, 22)],
+              children: [colorSwatch(c, COLOR_TILE)],
             })),
           },
         ],
-        // Each swatch is 32px with its ring, 4px apart, in 5px of padding and a 1px edge.
-        COLORS.length * 36 - 4 + 12,
+        // Each tile with its ring, the gaps between them, the padding and the edge.
+        COLOR_COLUMNS * (COLOR_TILE + 8) + (COLOR_COLUMNS - 1) * COLOR_GAP + 10,
+      );
+    case "status":
+      return panel(
+        STATUSES.map((s) => option(th, `status:${s.key}`, s.key === shown.status, s.label, "", s.icon)),
+        160,
+      );
+    case "format":
+      // Each format with what it writes for the stamp's own date.
+      return panel(
+        FORMAT_GROUPS.flatMap((group) => [
+          heading(th, group.label),
+          ...group.formats.map((f) =>
+            option(
+              th,
+              `format:${f}`,
+              f === shown.format,
+              FORMAT_LABELS[f],
+              formatDate(shown.date ?? "", f, shown.lang ?? "en"),
+            ),
+          ),
+        ]),
+        280,
+      );
+    case "language":
+      return panel(
+        LANGUAGES.map((l) => option(th, `lang:${l.key}`, l.key === shown.lang, l.label, l.code)),
+        150,
       );
   }
 }
@@ -360,6 +400,7 @@ function menuOf(menu: Menu, shown: Shown): DomElementSchema {
  * would rebuild the bar and make its icons blink.
  */
 function schema(shown: Shown, open: Menu | null): DomElementSchema {
+  const th = theme();
   const menu: DomElementSchema[] = open
     ? [
         {
@@ -368,7 +409,7 @@ function schema(shown: Shown, open: Menu | null): DomElementSchema {
           styles: { pointerEvents: "none" },
           children: [
             { type: "box", styles: { width: [offsetOf(open), "px"], height: [1, "px"], pointerEvents: "none" } },
-            menuOf(open, shown),
+            menuOf(th, open, shown),
           ],
         },
       ]
@@ -377,7 +418,7 @@ function schema(shown: Shown, open: Menu | null): DomElementSchema {
   return {
     type: "column",
     styles: { gap: MENU_GAP, crossAxisAlignment: "start", pointerEvents: "none" },
-    children: [bar(shown, open), ...menu],
+    children: [bar(th, shown, open), ...menu],
   };
 }
 
@@ -440,6 +481,9 @@ export async function hideToolbar(): Promise<void> {
   around = null;
   await command("command:dom:remove-floating-element", { domId: domId() });
 }
+
+/** Redraws the bar in the board's new theme, if it's up. */
+export const restyleToolbar = (): Promise<void> => draw();
 
 /** Opens `menu` under the bar, or shuts it when it's the open one. */
 export async function toggleMenu(menu: Menu): Promise<void> {

@@ -1,50 +1,51 @@
 # Datestamp for Drawdy
 
-![Datestamp: a purple "Monday, Oct 26" stamp selected on a Drawdy board, with the bar for its format, status, colour, tilt and language above it](assets/preview.png)
+![Datestamp: a lime "24 Oct 2026" stamp selected on a Drawdy board, with the bar for its colour, status, format, date, tilt and language above it](assets/preview.png)
 
-Mark anything on your board with a date sticker: **Saturday, Oct 24**. A stamp
-starts on today's date, and you can change its date, status, colour, format or
-language in a click.
+Stamp anything on your board with a date and a status icon: **👍 24 Oct
+2026**. A stamp starts on today's date, and you can change its date, status,
+colour, format or language in a click.
 
 ## What you get
 
-- Stamps that look like stickers: a coloured badge in a white rim, with an
-  icon and the date in two tones, leaning a little like they were slapped on.
-- Six statuses, each with its own icon: **Date**, **Approved**, **Done**,
-  **In review**, **Draft** and **Flagged**.
-- Eight colours: Black, Blue, Green, Red, Purple and Orange, a Gold with a
-  metallic rim and lettering, and a Rainbow.
-- Thirteen ways to write the date, from `Saturday, Oct 24` and `24 Oct 2026`
-  to `June`, `Q4 2026` and `2026`, in English, Thai, Japanese, Chinese,
-  Korean, Spanish, French or German.
-- A bar above a selected stamp to style it in a click, and a panel with a
-  month calendar for the date.
-- Each stamp is one image, so it moves and resizes as one, and looks the same
-  on a light or a dark board, like sticky notes do.
+- Stamps like stickers in a white rim: the status's icon in a disc, and the
+  date beside it, its first words in full and the rest softer. Straight, or
+  leaning a little. They read the same on a light or a dark board.
+- Six statuses, each with its own icon: **Updated**, **Approved**, **Done**,
+  **In review**, **Draft** and **Rejected**.
+- Ten colours: Drawdy's eight inks (Neutral, Lime, Orange, Blue, Teal, Purple,
+  Pink and Red), plus a Gold with a metallic rim and a Rainbow.
+- Thirteen ways to write the date, in three groups: dates such as `24 Oct 2026`,
+  numbers such as `24/10/2026`, and periods such as `October` or `Q4 2026`. In
+  English, Thai, Japanese, Chinese, Korean, Spanish, French or German.
+- A bar above a selected stamp to restyle it, and a panel with the same
+  settings and a month calendar for the date.
+- Each stamp is one image, so it moves and resizes as one.
 
 ## How to use
 
 ### 1. Add a stamp
 
-Click the Datestamp icon. Pick a day on the calendar, or **Yesterday**,
-**Today** or **Tomorrow**, and click **Add stamp** (or press ⌘↵). It lands in
-the middle of your view, selected, in the look you gave your last stamp.
+Click the Datestamp icon. Pick a day on the calendar, or **Today**,
+**Tomorrow** or **In a week**, and click **Add stamp** (or press ⌘↵). It lands
+in the middle of your view, selected, in the look you gave your last stamp.
 
 ### 2. Style a stamp
 
 Select a stamp and a bar appears above it:
 
-| You click     | What happens                                   |
-| ------------- | ---------------------------------------------- |
-| The calendar  | Opens the panel to pick another day            |
-| **Format**    | Lists the ways to write the date, by name      |
-| **Status**    | Lists the statuses, each with its icon         |
-| The colour    | Shows the colours to pick from                 |
-| The tilt      | Leans the stamp, or straightens it             |
-| **Language**  | Lists the languages to write the date in       |
+| You click        | What happens                                       |
+| ---------------- | -------------------------------------------------- |
+| The colour       | Lists the colours to pick from                     |
+| The status       | Lists the statuses                                 |
+| The format       | Lists the formats, each with an example            |
+| The calendar     | Opens the panel to pick another day                |
+| The tilt         | Leans the stamp, or straightens it                 |
+| The language     | Lists the languages to write the date in           |
 
-With a stamp selected, the calendar changes its date too. Select several stamps
-to change them all at once.
+The panel has the same bar above its calendar, so every setting is there too.
+With a stamp selected, the panel changes that stamp; with none, it sets up the
+next new one. Select several stamps to change them all at once.
 
 ## Good to know
 
