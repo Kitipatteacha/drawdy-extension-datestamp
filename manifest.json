@@ -1,0 +1,9 @@
+{
+  "driverId": "drawdy.datestamp",
+  "driverName": "Datestamp",
+  "driverVersion": "0.1.0",
+  "description": "Stamp a status and a date on anything on your board, and change either with a click.",
+  "main": "main.js",
+  "icon": "assets/datestamp.svg",
+  "permissions": ["dom", "scene"]
+}
